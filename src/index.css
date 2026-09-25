@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Surfaces: warm, near-black earth */
+  --color-bg: #151311;
+  --color-surface: #1d1a17;
+  --color-surface-2: #26221e;
+  --color-surface-3: #302b26;
+  --color-line: rgb(242 238 232 / 0.08);
+  --color-line-strong: rgb(242 238 232 / 0.14);
+
+  /* Text */
+  --color-ink: #f2eee8;
+  --color-ink-2: rgb(242 238 232 / 0.66);
+  --color-ink-3: rgb(242 238 232 / 0.42);
+
+  /* Brand + data */
+  --color-moss: #a3b46b;
+  --color-moss-deep: #8a9a5b;
+  --color-fire: #f0714e;
+  --color-quake: #e8b84a;
+  --color-rain: #6fa8c9;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(163 180 107 / 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-moss);
+  outline-offset: 2px;
+}
+
+/* Pressable elements confirm the press. */
+.pressable {
+  transition: transform 160ms var(--ease-out), background-color 150ms ease, color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
+.card {
+  @apply bg-surface border border-line rounded-xl;
+}
+
+/* Instrument labels: section names, sources, units. One voice for "metadata". */
+.eyebrow {
+  @apply font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-ink-3;
+}
+.source-tag {
+  @apply font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3;
+}
+
+/* Ranking bars grow from the left when the period changes. */
+.bar-fill {
+  transform-origin: left;
+  transition: transform 400ms var(--ease-out);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(242 238 232 / 0.12) transparent;
+}
+
+/* Skeleton shimmer for loading values */
+.skeleton {
+  @apply rounded-md bg-surface-3;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% { opacity: 0.5; }
+}
+
+/* ─── Chat answer typography ─────────────────────────────────────────────── */
+.answer {
+  @apply text-[15px] leading-relaxed text-ink;
+}
+.answer > * + * { margin-top: 0.75em; }
+.answer strong { @apply font-semibold text-ink; }
+.answer ul, .answer ol { padding-left: 1.25em; }
+.answer ul { list-style: disc; }
+.answer ol { list-style: decimal; }
+.answer li + li { margin-top: 0.3em; }
+.answer li::marker { color: var(--color-ink-3); }
+.answer code { @apply rounded bg-surface-3 px-1 py-0.5 text-[13px]; }
+.answer h1, .answer h2, .answer h3 { @apply font-semibold text-ink; }
+.answer table { @apply w-full text-sm; border-collapse: collapse; }
+.answer th, .answer td { @apply border-b border-line px-2 py-1.5 text-left; }
+.answer a { @apply text-moss underline underline-offset-2; }
+
+/* ─── Leaflet theming ────────────────────────────────────────────────────── */
+.leaflet-container {
+  background: #12100e;
+  font-family: var(--font-sans);
+}
+/* Warm the grey basemap toward the earth palette */
+.leaflet-tile-pane {
+  filter: sepia(0.3) saturate(0.7) brightness(0.8);
+}
+.aqi-pin {
+  display: flex;
+  height: 20px;
+  min-width: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1.5px solid #151311;
+  background: var(--c);
+  color: #151311;
+  font: 600 11px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.45);
+}
+.leaflet-control-zoom {
+  border: 1px solid var(--color-line-strong) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+.leaflet-control-zoom a {
+  background: var(--color-surface-2) !important;
+  color: var(--color-ink-2) !important;
+  border-color: var(--color-line) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: var(--color-surface-3) !important;
+  color: var(--color-ink) !important;
+}
+.leaflet-control-attribution {
+  background: rgb(21 19 17 / 0.7) !important;
+  color: var(--color-ink-3) !important;
+  font-size: 10px;
+}
+.leaflet-control-attribution a {
+  color: var(--color-ink-2) !important;
+}
+.leaflet-tooltip.bumi-tip {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  color: var(--color-ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.leaflet-tooltip.bumi-tip::before {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+  .pressable:active { transform: none; }
+  .bar-fill { transition: none; }
+}
