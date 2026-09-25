@@ -127,7 +127,12 @@ export default function Sources({ health }: { health: { data: Health | null; err
       </div>
 
       <p className="mt-10 text-xs text-ink-3">
-        Bumi Watch · Nebius × NVIDIA Global AI Hackathon · Basemap © OpenStreetMap contributors, © CARTO
+        Bumi Watch · Nebius × NVIDIA Global AI Hackathon · Basemap © Esri, HERE, Garmin, OpenStreetMap contributors ·
+        Province boundaries: 
+        <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink-2">
+          denyherianto
+        </a> 
+        (CC BY 4.0)
       </p>
     </div>
   );

@@ -131,6 +131,7 @@ export default function DataMap({ data, layers, selected, onSelect, fireClock, f
         <GeoJSON
           ref={geoRef}
           data={provinces}
+          attribution='Provinces <a href="https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces">denyherianto</a> (CC BY 4.0)'
           style={(f) => styleFor(provinceName(f))}
           onEachFeature={onEachFeature}
         />

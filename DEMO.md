@@ -106,7 +106,6 @@ Useful for the submission write-up or the video description:
   province, and a national overview.
 - **Data:** NASA FIRMS (VIIRS + MODIS satellites), WAQI (~130 stations), BMKG, Open-Meteo, pulled every 30 minutes
   into SQLite.
-- **Honest limits:** the map uses 32 province outlines (the newest provinces are counted under their parent
-  province on the map, while rainfall covers all 38); provinces without a public air station show no AQI rather
-  than an estimate.
+- **Honest limits:** provinces without a public air station show no AQI rather than an estimate; rainfall is a
+  7-day average per province, updated daily; fires are ~30 minutes behind the satellites.
 - **Next:** alerts, more sources (deforestation, land temperature), forecasts.

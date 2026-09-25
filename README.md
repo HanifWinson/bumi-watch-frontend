@@ -31,8 +31,8 @@ firebase deploy
 
 ## Notes
 
-- Province outlines are bundled in `public/indonesia-provinces.geojson` (BAKOSURTANAL, via
-  [superpikar/indonesia-geojson](https://github.com/superpikar/indonesia-geojson)). The file predates the newest
-  provinces, so Kalimantan Utara, Kepulauan Riau, Sulawesi Barat and the new Papua provinces have no outline of their
-  own. Their data still shows as map points and in the lists.
+- Province outlines for all 38 provinces (including the 2022 Papua split) are bundled in
+  `public/indonesia-provinces.geojson`, from
+  [denyherianto/indonesia-geojson-topojson-maps-with-38-provinces](https://github.com/denyherianto/indonesia-geojson-topojson-maps-with-38-provinces) under
+  CC BY 4.0 (credited on the map and the Sources page). The backend uses the same file to assign data to provinces.
 - Basemap: Esri World Dark Gray Canvas (free with attribution).
