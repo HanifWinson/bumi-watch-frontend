@@ -1,5 +1,5 @@
 // AQI bands follow the US EPA scale, the same one the agent's prompt uses.
-const AQI_BANDS = [
+export const AQI_BANDS = [
   { max: 50, label: 'Good', color: '#7fb77e' },
   { max: 100, label: 'Moderate', color: '#e3c55b' },
   { max: 150, label: 'Unhealthy for sensitive groups', short: 'Sensitive', color: '#eb9a4f' },

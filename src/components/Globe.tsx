@@ -45,7 +45,8 @@ const arrivalScale = (w: number, h: number) => Math.min((0.46 * w) / Math.sin((2
 export default function Globe({ flying, onArrive, still }: GlobeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const size = useRef({ w: 0, h: 0 });
-  const view = useRef<View>({ lambda: -INDONESIA.lon - 70, phi: 8, scale: 0 });
+  // Start with Indonesia 40° left of centre; the spin carries it to the middle in ~8 s
+  const view = useRef<View>({ lambda: -INDONESIA.lon - 40, phi: 8, scale: 0 });
   const layers = useRef<{ land?: GeoPermissibleObjects; indonesia?: FeatureCollection; fires: [number, number][] }>({ fires: [] });
   const onArriveRef = useRef(onArrive);
   onArriveRef.current = onArrive;
@@ -97,7 +98,8 @@ export default function Globe({ flying, onArrive, still }: GlobeProps) {
     const draw = (now: number) => {
       const dt = Math.min(now - last, 64) / 1000; // don't jump after a background tab
       last = now;
-      if (!flying && !still) view.current.lambda -= SPIN_DEG_PER_SEC * dt;
+      // West to east like the real Earth: continents move left to right
+      if (!flying && !still) view.current.lambda += SPIN_DEG_PER_SEC * dt;
 
       const { w, h } = size.current;
       const { lambda, phi, scale } = view.current;

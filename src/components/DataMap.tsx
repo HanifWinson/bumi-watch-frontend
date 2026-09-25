@@ -28,6 +28,13 @@ const FIRE = '#f0714e';
 const QUAKE = '#e8b84a';
 const MOSS = '#a3b46b';
 
+// Open on the whole country, Aceh to Papua, whatever the map's width
+// (a fixed zoom cut both ends off on a laptop screen).
+const INDONESIA_BOUNDS: [[number, number], [number, number]] = [
+  [-11, 94.8],
+  [6.2, 141.2],
+];
+
 // Esri's dark canvas is free to use with attribution (CARTO now needs an API key).
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas';
 const ESRI_ATTRIBUTION = 'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors';
@@ -102,9 +109,10 @@ export default function DataMap({ data, layers, selected, onSelect, fireClock, f
 
   return (
     <MapContainer
-      center={[-2.4, 118]}
-      zoom={5}
-      minZoom={4}
+      bounds={INDONESIA_BOUNDS}
+      boundsOptions={{ paddingTopLeft: [16, 56], paddingBottomRight: [16, 16] }}
+      zoomSnap={0.25}
+      minZoom={3}
       maxZoom={10}
       maxBounds={[
         [-16, 88],

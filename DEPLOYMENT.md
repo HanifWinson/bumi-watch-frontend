@@ -94,6 +94,8 @@ won't allow unless you add them in step 3. The production URL is what matters.
 
 - **Build command:** `npm run build` · **Output directory:** `dist` · **Node:** 22
 - **Environment variable at build time:** `VITE_API_URL`
+- **Also set `VITE_SITE_URL`** to the frontend's own URL (e.g. `https://bumi-watch.netlify.app`) so shared links
+  show the preview card (`public/og-image.png`). On Vercel this is automatic.
 - Building locally and uploading `dist/` also works: put `VITE_API_URL="https://..."` in a `.env.production`
   file (git-ignored) before `npm run build`.
 - **Firebase Hosting:** `firebase.json` is already in the repo. Create your own Firebase project, run

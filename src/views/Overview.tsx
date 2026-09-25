@@ -8,6 +8,7 @@ import StatTiles from '../components/StatTiles';
 import DataMap, { type Layers, type MapFocus } from '../components/DataMap';
 import ProvincePanel from '../components/ProvincePanel';
 import Timelapse from '../components/Timelapse';
+import MapLegend from '../components/MapLegend';
 import { newFireClock } from '../components/fireCanvas';
 import { cn } from '../lib/utils';
 
@@ -59,16 +60,13 @@ export default function Overview({ days, onDaysChange, onAsk, selected, onSelect
         <div className="card relative h-[520px] overflow-hidden sm:h-[620px]">
           <DataMap data={data} layers={layers} selected={selected} onSelect={setSelected} fireClock={fireClock} focus={focus} />
           <LayerToggles layers={layers} onChange={setLayers} data={data} />
-          {canPlay && (
-            <div className="absolute bottom-3 left-3 z-[400]">
-              <Timelapse points={data!.fires.points} clock={fireClock} />
+          {/* Legend above the timelapse control; the legend is left out on phones, where the map is small */}
+          <div className="absolute bottom-3 left-3 z-[400] flex flex-col items-start gap-2">
+            <div className="hidden sm:block">
+              <MapLegend data={data} layers={layers} hint={!selected} />
             </div>
-          )}
-          {!selected && !canPlay && (
-            <div className="source-tag pointer-events-none absolute bottom-3 left-3 z-[400] hidden rounded-md bg-bg/80 px-2.5 py-1.5 backdrop-blur sm:block">
-              Click a province for details · shading = fire hotspots
-            </div>
-          )}
+            {canPlay && <Timelapse points={data!.fires.points} clock={fireClock} />}
+          </div>
           <AnimatePresence>
             {selected && (
               <ProvincePanel

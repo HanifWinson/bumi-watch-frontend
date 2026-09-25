@@ -46,7 +46,13 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
         animate={flying ? { opacity: 0, transform: 'translateY(-8px)' } : { opacity: 1, transform: 'translateY(0px)' }}
         transition={{ duration: 0.2, ease }}
       >
-        <div className="relative flex max-w-xl flex-col items-center text-center">
+        <div className="relative isolate flex max-w-xl flex-col items-center text-center">
+          {/* Soft dark glow behind the text, so the globe (and Indonesia's fires) passing behind it never hurts legibility */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-16 -inset-y-10 -z-10"
+            style={{ background: 'radial-gradient(closest-side, rgb(21 19 17 / 0.6), rgb(21 19 17 / 0.3) 60%, transparent)' }}
+          />
           <motion.img
             src={logoImg}
             alt=""
