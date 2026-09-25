@@ -90,7 +90,7 @@ export default function StatTiles({ data, loading }: { data: Dashboard | null; l
           ) : (
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full" style={{ background: band.color }} />
-              {band.label} · {air.stations.length} cities
+              {band.label} · {air.stations.length} stations
             </span>
           )
         }

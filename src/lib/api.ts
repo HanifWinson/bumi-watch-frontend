@@ -23,14 +23,12 @@ export interface AirStation {
   timestamp: string;
 }
 
+// Slim on purpose: a busy day sends 5–8k of these
 export interface FirePoint {
   lat: number;
   lon: number;
   frp: number | null;
-  confidence: string | null;
-  satellite: string | null;
   timestamp: string;
-  province: string;
 }
 
 export interface QuakeEvent {

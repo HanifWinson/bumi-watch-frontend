@@ -28,7 +28,7 @@ const SOURCES: {
     table: 'air_quality',
     name: 'WAQI',
     what: 'Air quality',
-    description: 'AQI and PM2.5, PM10, O₃, NO₂, SO₂ and CO readings from ground stations in 25 Indonesian cities.',
+    description: 'Current air quality index (US EPA scale) from government and community monitoring stations across Indonesia.',
     url: 'https://aqicn.org/',
     logo: waqiLogo,
     color: '#7fb77e',

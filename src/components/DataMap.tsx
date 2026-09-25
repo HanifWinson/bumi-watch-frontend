@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, ZoomControl } from 'react-leaflet';
-import { divIcon } from 'leaflet';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
+import { canvas, circleMarker, divIcon, layerGroup } from 'leaflet';
 import type { GeoJSON as LeafletGeoJSON, Layer, LeafletMouseEvent, PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import 'leaflet/dist/leaflet.css';
-import type { Dashboard } from '../lib/api';
+import type { AirStation, Dashboard, FirePoint } from '../lib/api';
 import { aqiBand, formatNumber, timeAgo } from '../lib/format';
 import { loadProvinces } from '../lib/provinces';
 
@@ -121,16 +121,7 @@ export default function DataMap({ data, layers, selected, onSelect }: DataMapPro
         />
       )}
 
-      {layers.fires &&
-        data?.fires.points.map((p, i) => (
-          <CircleMarker
-            key={`f${i}-${p.timestamp}`}
-            center={[p.lat, p.lon]}
-            radius={Math.min(6, 2 + Math.sqrt(p.frp ?? 1) / 3)}
-            interactive={false}
-            pathOptions={{ stroke: false, fillColor: FIRE, fillOpacity: 0.75 }}
-          />
-        ))}
+      {layers.fires && data && <FireDots points={data.fires.points} />}
 
       {layers.quakes &&
         data?.earthquakes.events.map((q, i) => (
@@ -153,24 +144,76 @@ export default function DataMap({ data, layers, selected, onSelect }: DataMapPro
           </CircleMarker>
         ))}
 
-      {layers.air &&
-        data?.air.stations
-          .filter((s) => s.lat != null && s.lon != null)
-          .map((s) => {
-            const band = aqiBand(s.aqi);
-            return (
-              <Marker key={s.city} position={[s.lat!, s.lon!]} icon={aqiIcon(s.aqi, band.color)} riseOnHover>
-                <Tooltip className="bumi-tip" direction="top" offset={[0, -8]}>
-                  <strong>{s.city.split(',')[0]}</strong>
-                  <br />
-                  <span style={{ color: band.color }}>AQI {s.aqi}</span>
-                  <span style={{ opacity: 0.6 }}> · {band.label}</span>
-                  <br />
-                  <span style={{ opacity: 0.5 }}>{timeAgo(s.timestamp)}</span>
-                </Tooltip>
-              </Marker>
-            );
-          })}
+      {layers.air && data && <AirStations stations={data.air.stations} />}
     </MapContainer>
+  );
+}
+
+// Thousands of fires: drawn straight onto one canvas instead of one React
+// component each, so toggling layers or selecting a province stays instant.
+function FireDots({ points }: { points: FirePoint[] }) {
+  const map = useMap();
+  useEffect(() => {
+    const renderer = canvas({ padding: 0.5 });
+    const group = layerGroup(
+      points.map((p) =>
+        circleMarker([p.lat, p.lon], {
+          renderer,
+          radius: Math.min(4, 1.5 + Math.sqrt(p.frp ?? 1) / 4),
+          stroke: false,
+          fillColor: FIRE,
+          fillOpacity: 0.65,
+          interactive: false,
+        }),
+      ),
+    ).addTo(map);
+    return () => {
+      group.remove();
+    };
+  }, [map, points]);
+  return null;
+}
+
+// ~130 stations: labelled pins overlap at country scale, so show coloured
+// dots until the map is zoomed in far enough for the numbers to fit.
+const PIN_ZOOM = 7;
+
+function AirStations({ stations }: { stations: AirStation[] }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(map.getZoom());
+  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
+
+  return (
+    <>
+      {stations
+        .filter((s) => s.lat != null && s.lon != null)
+        .map((s) => {
+          const band = aqiBand(s.aqi);
+          const tip = (
+            <Tooltip className="bumi-tip" direction="top" offset={[0, -8]}>
+              <strong>{s.city.split(',')[0]}</strong>
+              <br />
+              <span style={{ color: band.color }}>AQI {s.aqi}</span>
+              <span style={{ opacity: 0.6 }}> · {band.label}</span>
+              <br />
+              <span style={{ opacity: 0.5 }}>{timeAgo(s.timestamp)}</span>
+            </Tooltip>
+          );
+          return zoom >= PIN_ZOOM ? (
+            <Marker key={s.city} position={[s.lat!, s.lon!]} icon={aqiIcon(s.aqi, band.color)} riseOnHover>
+              {tip}
+            </Marker>
+          ) : (
+            <CircleMarker
+              key={s.city}
+              center={[s.lat!, s.lon!]}
+              radius={4.5}
+              pathOptions={{ color: '#151311', weight: 1.5, fillColor: band.color, fillOpacity: 1 }}
+            >
+              {tip}
+            </CircleMarker>
+          );
+        })}
+    </>
   );
 }

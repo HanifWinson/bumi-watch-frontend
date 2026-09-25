@@ -109,7 +109,7 @@ function PeriodSwitch({ days, onChange, busy }: { days: PeriodDays; onChange: (d
 
 function LayerToggles({ layers, onChange, data }: { layers: Layers; onChange: (l: Layers) => void; data: Dashboard | null }) {
   const items: { key: keyof Layers; label: string; color: string; count?: number }[] = [
-    { key: 'fires', label: 'Fires', color: 'var(--color-fire)', count: data?.fires.points.length },
+    { key: 'fires', label: 'Fires', color: 'var(--color-fire)', count: data?.fires.total },
     { key: 'quakes', label: 'Quakes', color: 'var(--color-quake)', count: data?.earthquakes.events.length },
     { key: 'air', label: 'Air quality', color: aqiBand(75).color, count: data?.air.stations.length },
   ];
