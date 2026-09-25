@@ -6,6 +6,7 @@ import type { Feature, FeatureCollection } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import type { Dashboard } from '../lib/api';
 import { aqiBand, formatNumber, timeAgo } from '../lib/format';
+import { loadProvinces } from '../lib/provinces';
 
 export type Layers = { fires: boolean; quakes: boolean; air: boolean };
 
@@ -33,15 +34,6 @@ const aqiIcon = (aqi: number, color: string) =>
     iconAnchor: [17, 10],
   });
 
-// Province outlines, bundled in /public (names normalised to the backend's list).
-let provincesPromise: Promise<FeatureCollection> | null = null;
-function loadProvinces() {
-  provincesPromise ??= fetch('/indonesia-provinces.geojson').then((r) => {
-    if (!r.ok) throw new Error('Could not load province shapes');
-    return r.json();
-  });
-  return provincesPromise;
-}
 
 const provinceName = (feature?: Feature) => (feature?.properties?.name as string | undefined) ?? '';
 

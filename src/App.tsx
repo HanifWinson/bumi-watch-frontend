@@ -71,7 +71,8 @@ function Shell() {
           <motion.div
             key="landing"
             className="fixed inset-0 z-[100]"
-            exit={{ opacity: 0, transform: 'translateY(-24px)' }}
+            // Opacity only: the globe has just zoomed into Indonesia, so it dissolves in place
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
           >
             <LandingPage onStart={start} />
