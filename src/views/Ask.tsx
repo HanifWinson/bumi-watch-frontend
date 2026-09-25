@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
-import { ArrowUp, Check, ChevronDown, RotateCcw, Square, SquarePen, TriangleAlert } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, MapPin, RotateCcw, Square, SquarePen, TriangleAlert } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 import { useChat, type ChatMessage, type Progress } from '../state/chat';
-import { TOOL_LABELS, describeToolArgs, modelLabel } from '../lib/format';
+import { TOOL_LABELS, describeToolArgs, modelLabel, periodFor, type PeriodDays } from '../lib/format';
 import { cn } from '../lib/utils';
 
 const SUGGESTIONS = [
@@ -16,7 +16,9 @@ const SUGGESTIONS = [
 
 const ease = [0.23, 1, 0.32, 1] as const;
 
-export default function Ask({ model }: { model?: string }) {
+type ShowOnMap = (province: string, period: PeriodDays) => void;
+
+export default function Ask({ model, onShowOnMap }: { model?: string; onShowOnMap: ShowOnMap }) {
   const { messages, progress, pending, pendingSince, send, retry, stop, clear } = useChat();
   const endRef = useRef<HTMLDivElement>(null);
   const lastId = messages[messages.length - 1]?.id;
@@ -45,7 +47,7 @@ export default function Ask({ model }: { model?: string }) {
               m.role === 'user' ? (
                 <UserMessage key={m.id} text={m.content} />
               ) : (
-                <AssistantMessage key={m.id} message={m} onRetry={m.id === lastId && m.error ? retry : undefined} />
+                <AssistantMessage key={m.id} message={m} onRetry={m.id === lastId && m.error ? retry : undefined} onShowOnMap={onShowOnMap} />
               ),
             )}
             {pendingSince && <Thinking since={pendingSince} progress={progress} />}
@@ -96,7 +98,27 @@ function UserMessage({ text }: { text: string }) {
   );
 }
 
-function AssistantMessage({ message, onRetry }: { message: ChatMessage; onRetry?: () => void }) {
+// Provinces the agent actually queried (not guessed from the text), each with its period
+function mapTargets(meta: NonNullable<ChatMessage['meta']>) {
+  const targets = new Map<string, PeriodDays>();
+  for (const call of meta.tool_calls) {
+    const province = call.args?.province;
+    if (typeof province === 'string' && province && !targets.has(province)) {
+      targets.set(province, periodFor(call.args.days));
+    }
+  }
+  return [...targets].slice(0, 3);
+}
+
+function AssistantMessage({
+  message,
+  onRetry,
+  onShowOnMap,
+}: {
+  message: ChatMessage;
+  onRetry?: () => void;
+  onShowOnMap: ShowOnMap;
+}) {
   const [showTrace, setShowTrace] = useState(false);
   const meta = message.meta;
 
@@ -135,6 +157,16 @@ function AssistantMessage({ message, onRetry }: { message: ChatMessage; onRetry?
             <div className="flex flex-wrap items-center gap-1.5">
               {/* No source chips: the answer's own "📍 Sources" line names what it used,
                   and chips listing everything the tools fetched contradicted it */}
+              {mapTargets(meta).map(([province, period]) => (
+                <button
+                  key={province}
+                  onClick={() => onShowOnMap(province, period)}
+                  className="pressable flex h-7 items-center gap-1.5 rounded-md border border-line px-2 text-[11px] text-ink-2 hover:border-line-strong hover:text-ink"
+                >
+                  <MapPin className="h-3 w-3 text-moss" />
+                  Show {province} on map
+                </button>
+              ))}
               <button
                 onClick={() => setShowTrace((v) => !v)}
                 aria-expanded={showTrace}

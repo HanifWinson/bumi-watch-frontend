@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { divIcon } from 'leaflet';
-import type { GeoJSON as LeafletGeoJSON, Layer, LeafletMouseEvent, PathOptions } from 'leaflet';
+import type { GeoJSON as LeafletGeoJSON, Layer, LatLngBounds, LeafletMouseEvent, PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import type { AirStation, Dashboard, FirePoint } from '../lib/api';
@@ -11,6 +11,8 @@ import { useReducedMotion } from 'motion/react';
 import { FireCanvasLayer, type FireClock } from './fireCanvas';
 
 export type Layers = { fires: boolean; quakes: boolean; air: boolean };
+/** A request to zoom to a province; a new key repeats it for the same province */
+export type MapFocus = { province: string; key: number };
 
 interface DataMapProps {
   data: Dashboard | null;
@@ -19,6 +21,7 @@ interface DataMapProps {
   onSelect: (province: string | null) => void;
   /** Timelapse state shared with the playback control */
   fireClock: FireClock;
+  focus?: MapFocus | null;
 }
 
 const FIRE = '#f0714e';
@@ -41,7 +44,7 @@ const aqiIcon = (aqi: number, color: string) =>
 
 const provinceName = (feature?: Feature) => (feature?.properties?.name as string | undefined) ?? '';
 
-export default function DataMap({ data, layers, selected, onSelect, fireClock }: DataMapProps) {
+export default function DataMap({ data, layers, selected, onSelect, fireClock, focus }: DataMapProps) {
   const [provinces, setProvinces] = useState<FeatureCollection | null>(null);
   const geoRef = useRef<LeafletGeoJSON | null>(null);
 
@@ -124,6 +127,8 @@ export default function DataMap({ data, layers, selected, onSelect, fireClock }:
           onEachFeature={onEachFeature}
         />
       )}
+
+      {focus && provinces && <FocusProvince focus={focus} geo={geoRef} />}
 
       {layers.fires && data && <FireDots points={data.fires.points} clock={fireClock} />}
 
@@ -211,4 +216,30 @@ function AirStations({ stations }: { stations: AirStation[] }) {
         })}
     </>
   );
+}
+
+// Zoom to a province once per focus request, leaving room for the province panel
+// (right side on desktop, bottom sheet on phones). Map clicks don't do this.
+function FocusProvince({ focus, geo }: { focus: MapFocus; geo: React.RefObject<LeafletGeoJSON | null> }) {
+  const map = useMap();
+  const done = useRef<number | null>(null);
+  useEffect(() => {
+    if (done.current === focus.key || !geo.current) return;
+    done.current = focus.key;
+    let bounds: LatLngBounds | null = null;
+    geo.current.eachLayer((layer) => {
+      const l = layer as Layer & { feature?: Feature; getBounds: () => LatLngBounds };
+      if (provinceName(l.feature) !== focus.province) return;
+      bounds = bounds ? bounds.extend(l.getBounds()) : l.getBounds();
+    });
+    if (!bounds) return; // a newer province with no outline on this map: the panel still opens
+    const sidePanel = window.matchMedia('(min-width: 768px)').matches;
+    const h = map.getSize().y;
+    map.fitBounds(bounds, {
+      paddingTopLeft: [40, 56],
+      paddingBottomRight: sidePanel ? [360, 40] : [40, Math.round(h * 0.55)],
+      maxZoom: 7,
+    });
+  }, [focus, geo, map]);
+  return null;
 }

@@ -5,7 +5,7 @@ import { API_URL, getDashboard, type Dashboard } from '../lib/api';
 import { PERIODS, aqiBand, formatNumber, timeAgo, type PeriodDays } from '../lib/format';
 import { useRemote } from '../state/useRemote';
 import StatTiles from '../components/StatTiles';
-import DataMap, { type Layers } from '../components/DataMap';
+import DataMap, { type Layers, type MapFocus } from '../components/DataMap';
 import ProvincePanel from '../components/ProvincePanel';
 import Timelapse from '../components/Timelapse';
 import { newFireClock } from '../components/fireCanvas';
@@ -15,15 +15,18 @@ interface OverviewProps {
   days: PeriodDays;
   onDaysChange: (days: PeriodDays) => void;
   onAsk: (question: string) => void;
+  selected: string | null;
+  onSelect: (province: string | null) => void;
+  /** Zoom the map to this province (from a chat answer's "Show on map") */
+  focus: MapFocus | null;
 }
 
-export default function Overview({ days, onDaysChange, onAsk }: OverviewProps) {
+export default function Overview({ days, onDaysChange, onAsk, selected, onSelect: setSelected, focus }: OverviewProps) {
   const load = useCallback((signal: AbortSignal) => getDashboard(days, signal), [days]);
   const { data, error, loading, refreshing, reload } = useRemote(`dashboard:${days}`, load);
   const [layers, setLayers] = useState<Layers>({ fires: true, quakes: true, air: true });
   const [fireClock] = useState(newFireClock);
   const canPlay = days > 1 && layers.fires && !!data?.fires.points.length;
-  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selected) return;
@@ -54,7 +57,7 @@ export default function Overview({ days, onDaysChange, onAsk }: OverviewProps) {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="card relative h-[520px] overflow-hidden sm:h-[620px]">
-          <DataMap data={data} layers={layers} selected={selected} onSelect={setSelected} fireClock={fireClock} />
+          <DataMap data={data} layers={layers} selected={selected} onSelect={setSelected} fireClock={fireClock} focus={focus} />
           <LayerToggles layers={layers} onChange={setLayers} data={data} />
           {canPlay && (
             <div className="absolute bottom-3 left-3 z-[400]">

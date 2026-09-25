@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import Header, { type View } from './components/Header';
 import LandingPage from './components/LandingPage';
 import Overview from './views/Overview';
+import type { MapFocus } from './components/DataMap';
 import Ask from './views/Ask';
 import Sources from './views/Sources';
 import { ChatProvider, useChat } from './state/chat';
@@ -42,6 +43,9 @@ function Shell() {
   const [started, setStarted] = useState(readStarted);
   const [view, setView] = useState<View>('overview');
   const [days, setDays] = useState<PeriodDays>(1);
+  // Selected province lives here so the chat can open it on the map
+  const [selected, setSelected] = useState<string | null>(null);
+  const [focus, setFocus] = useState<MapFocus | null>(null);
   const health = useRemote('health', getHealth, 60 * 1000);
   const { send } = useChat();
 
@@ -58,11 +62,26 @@ function Shell() {
   const askAbout = useCallback(
     (question: string) => {
       send(question);
+      setFocus(null);
       setView('ask');
       window.scrollTo({ top: 0 });
     },
     [send],
   );
+
+  // A focus zooms the map once, right after "Show on map"; ordinary navigation drops it
+  const navigate = useCallback((next: View) => {
+    setFocus(null);
+    setView(next);
+  }, []);
+
+  const showOnMap = useCallback((province: string, period: PeriodDays) => {
+    setDays(period);
+    setSelected(province);
+    setFocus({ province, key: Date.now() });
+    setView('overview');
+    window.scrollTo({ top: 0 });
+  }, []);
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -86,7 +105,7 @@ function Shell() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
         >
-          <Header view={view} onNavigate={setView} onHome={backToLanding} health={health} />
+          <Header view={view} onNavigate={navigate} onHome={backToLanding} health={health} />
           <main>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -96,8 +115,17 @@ function Shell() {
                 exit={{ opacity: 0, transition: { duration: 0.12 } }}
                 transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
               >
-                {view === 'overview' && <Overview days={days} onDaysChange={setDays} onAsk={askAbout} />}
-                {view === 'ask' && <Ask model={health.data?.model} />}
+                {view === 'overview' && (
+                  <Overview
+                    days={days}
+                    onDaysChange={setDays}
+                    onAsk={askAbout}
+                    selected={selected}
+                    onSelect={setSelected}
+                    focus={focus}
+                  />
+                )}
+                {view === 'ask' && <Ask model={health.data?.model} onShowOnMap={showOnMap} />}
                 {view === 'sources' && <Sources health={health} />}
               </motion.div>
             </AnimatePresence>

@@ -68,3 +68,10 @@ export function describeToolArgs(args: Record<string, unknown>): string {
   if (Number.isFinite(days)) parts.push(PERIODS.find((p) => p.days === days)?.label ?? `${days}d`);
   return parts.join(' · ');
 }
+
+// The dashboard period closest to a tool's look-back (tools default to 7 days)
+export function periodFor(days: unknown): PeriodDays {
+  const d = Number(days ?? 7);
+  if (!Number.isFinite(d)) return 7;
+  return d <= 1 ? 1 : d <= 7 ? 7 : 30;
+}
