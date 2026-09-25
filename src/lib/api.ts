@@ -95,6 +95,14 @@ export interface AgentReply {
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
+/** Progress from POST /api/agent/stream, in the order it happens */
+export type AgentEvent =
+  | { type: 'thinking'; step: number; after_tools: boolean }
+  | { type: 'tool_start'; id: string; name: string; args: Record<string, unknown> }
+  | { type: 'tool_end'; id: string; name: string; ok: boolean; ms: number }
+  | ({ type: 'answer' } & AgentReply)
+  | { type: 'error'; error: string };
+
 // ─── Requests ─────────────────────────────────────────────────────────────────
 export class ApiError extends Error {
   constructor(message: string, readonly kind: 'offline' | 'server' | 'timeout') {
@@ -145,3 +153,52 @@ export const askAgent = (question: string, history: ChatTurn[], signal?: AbortSi
     signal,
     timeoutMs: 120000,
   });
+
+// Same question, but streamed: onEvent sees each step (thinking, each tool call)
+// as it happens, and the promise resolves with the final answer.
+export async function askAgentStream(
+  question: string,
+  history: ChatTurn[],
+  onEvent: (event: AgentEvent) => void,
+  signal?: AbortSignal,
+): Promise<AgentReply> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/agent/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, history }),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new ApiError(`Can't reach the Bumi Watch backend at ${API_URL}.`, 'offline');
+  }
+
+  // An older backend without the stream endpoint: ask the plain way
+  if (res.status === 404) return askAgent(question, history, signal);
+  if (!res.ok || !res.body) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(body?.error || `Server error ${res.status}`, 'server');
+  }
+
+  // Server-sent events: "data: {json}" blocks separated by a blank line
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += value;
+    let end: number;
+    while ((end = buffer.indexOf('\n\n')) !== -1) {
+      const block = buffer.slice(0, end);
+      buffer = buffer.slice(end + 2);
+      if (!block.startsWith('data: ')) continue; // heartbeat comments
+      const event = JSON.parse(block.slice(6)) as AgentEvent;
+      if (event.type === 'answer') return { answer: event.answer, metadata: event.metadata };
+      if (event.type === 'error') throw new ApiError(event.error, 'server');
+      onEvent(event);
+    }
+  }
+  throw new ApiError('The connection closed before the answer arrived.', 'server');
+}

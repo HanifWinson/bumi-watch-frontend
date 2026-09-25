@@ -56,3 +56,15 @@ export function modelLabel(model: string | undefined): string {
   if (/nemotron-3-super/i.test(name)) return 'Nemotron 3 Super';
   return name;
 }
+
+// "Kalimantan Tengah · 24h" from a tool call's arguments, for the live steps
+export function describeToolArgs(args: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (args.city) parts.push(String(args.city));
+  else if (args.province) parts.push(String(args.province));
+  else parts.push('All Indonesia');
+  if (args.minMagnitude != null) parts.push(`M${args.minMagnitude}+`);
+  const days = Number(args.days);
+  if (Number.isFinite(days)) parts.push(PERIODS.find((p) => p.days === days)?.label ?? `${days}d`);
+  return parts.join(' · ');
+}

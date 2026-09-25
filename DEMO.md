@@ -42,7 +42,7 @@ not clicking and talking at the same time. Timings are for the *edited* video.
 | 0:15–0:45 | **Overview.** Hover over the four tiles; toggle **Fires / Quakes / Air quality** on the map; switch **24h → 7d → 24h** | "One live map: fire hotspots from NASA satellites, air quality from about 130 stations, earthquakes from BMKG, and rainfall for every province, refreshed every 30 minutes. Right now there are over [N] fire hotspots in the last 24 hours." |
 | 0:45–1:05 | Point at **Most fire hotspots** and **Worst air**; click the leading province on the map | "And the data tells a story. [Kalimantan Tengah] has the most fires, and also the worst air: [Palangka Raya] is at AQI [474]. Hazardous." |
 | 1:05–1:20 | Province panel open; click **Ask Bumi about [province]** | "But a map can't tell you *why*. So we ask." |
-| 1:20–1:45 | Chat: the status line *Choosing which data to pull → Querying the database…* (keep 2–3 s, cut the rest), then the answer appears | "The question goes to NVIDIA Nemotron, running on Nebius Token Factory. It isn't answering from memory. It decides which of six database tools to call, queries the live data, and links the sources together." |
+| 1:20–1:45 | Chat: the live steps. *Nemotron is choosing which data to pull* → each tool call appears with a spinner, then ✓ (e.g. *Air quality · All Indonesia · 24h*) → *Reading the results and writing the answer*. Keep the moments where a tool row appears; cut the long "choosing" waits. Then the answer appears | "The question goes to NVIDIA Nemotron, running on Nebius Token Factory. It isn't answering from memory. It decides which of six database tools to call, queries the live data, and links the sources together." |
 | 1:45–2:10 | Zoom in on the answer's numbers and the **📍 Sources** line; click **N tool calls · Xs** to open **How Nemotron answered** | "Every number comes from the data, and every answer names its sources. And you can see exactly what the agent did: which tools, for which province, over what period." |
 | 2:10–2:35 | Type **Bagaimana kualitas udara di Jakarta hari ini?** → answer in Indonesian | "It works in Bahasa Indonesia too, station by station." |
 | 2:35–2:50 | **Sources** page | "Four public data feeds, pulled every 30 minutes into one database. The dashboard is plain SQL; the answers are Nemotron with function calling." |
@@ -73,8 +73,9 @@ The empty **Ask Bumi** page also shows four clickable suggestions, handy if you 
 
 - **Tools (all free):** OBS Studio for recording, or Windows 11's Snipping Tool (it can record the screen).
   Edit in Clipchamp (built into Windows 11), CapCut or DaVinci Resolve.
-- **Cut the waiting.** Keep 2–3 seconds of the "thinking" status so viewers see the agent is working, then jump
-  cut to the answer. Don't speed up the whole clip; jump cuts look cleaner.
+- **Cut the waiting, keep the steps.** The live steps under the question are real (streamed from the backend as
+  Nemotron works), so keep each tool row appearing and ticking ✓. Cut the long stretches in between with
+  jump cuts. Don't speed up the whole clip; jump cuts look cleaner.
 - **Zoom in** (crop/zoom in the editor) on the answer and on the tool-call list. At full-screen size they're
   too small to read in a video player.
 - **Cursor:** move it slowly and deliberately; park it out of the way while text is on screen.

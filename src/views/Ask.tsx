@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowUp, Check, ChevronDown, RotateCcw, Square, SquarePen, TriangleAlert } from 'lucide-react';
 import logoImg from '../assets/logo.png';
-import { useChat, type ChatMessage } from '../state/chat';
-import { TOOL_LABELS, modelLabel } from '../lib/format';
+import { useChat, type ChatMessage, type Progress } from '../state/chat';
+import { TOOL_LABELS, describeToolArgs, modelLabel } from '../lib/format';
 import { cn } from '../lib/utils';
 
 const SUGGESTIONS = [
@@ -17,7 +17,7 @@ const SUGGESTIONS = [
 const ease = [0.23, 1, 0.32, 1] as const;
 
 export default function Ask({ model }: { model?: string }) {
-  const { messages, pending, pendingSince, send, retry, stop, clear } = useChat();
+  const { messages, progress, pending, pendingSince, send, retry, stop, clear } = useChat();
   const endRef = useRef<HTMLDivElement>(null);
   const lastId = messages[messages.length - 1]?.id;
 
@@ -48,7 +48,7 @@ export default function Ask({ model }: { model?: string }) {
                 <AssistantMessage key={m.id} message={m} onRetry={m.id === lastId && m.error ? retry : undefined} />
               ),
             )}
-            {pendingSince && <Thinking since={pendingSince} />}
+            {pendingSince && <Thinking since={pendingSince} progress={progress} />}
           </div>
           <div ref={endRef} className="h-4" />
         </div>
@@ -210,29 +210,90 @@ function Trace({ meta }: { meta: NonNullable<ChatMessage['meta']> }) {
   );
 }
 
-function Thinking({ since }: { since: number }) {
+const PHASE_LABEL: Record<Progress['phase'], string> = {
+  choosing: 'Nemotron is choosing which data to pull',
+  querying: 'Querying the database',
+  writing: 'Reading the results and writing the answer',
+};
+
+// Live view of the agent: what it's doing now, and each tool call as it runs.
+// Everything here comes from the backend's event stream, nothing is on a timer.
+function Thinking({ since, progress }: { since: number; progress: Progress | null }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, []);
   const seconds = Math.max(0, Math.floor((now - since) / 1000));
-  const label = seconds < 4 ? 'Choosing which data to pull' : seconds < 15 ? 'Querying the database and reasoning' : 'Still working, cross-checking sources';
+  const phase = progress?.phase ?? 'choosing';
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="flex items-center gap-3"
+      className="flex gap-3"
       role="status"
     >
-      <img src={logoImg} alt="" className="h-6 w-6 animate-pulse" />
-      <span className="text-sm text-ink-2">
-        {label}
-        <span className="ml-2 font-mono text-xs tabular-nums text-ink-3">{seconds}s</span>
-      </span>
+      <img src={logoImg} alt="" className="mt-0.5 h-6 w-6 shrink-0 animate-pulse" />
+      <div className="min-w-0 flex-1">
+        <div className="text-sm text-ink-2">
+          <motion.span
+            key={phase}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            {PHASE_LABEL[phase]}
+          </motion.span>
+          <span className="ml-2 font-mono text-xs tabular-nums text-ink-3">{seconds}s</span>
+        </div>
+
+        {!!progress?.tools.length && (
+          <ol className="mt-3 space-y-1.5">
+            {progress.tools.map((t) => {
+              const tool = TOOL_LABELS[t.name];
+              return (
+                <motion.li
+                  key={t.id}
+                  initial={{ opacity: 0, transform: 'translateY(4px)' }}
+                  animate={{ opacity: 1, transform: 'translateY(0px)' }}
+                  transition={{ duration: 0.2, ease }}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <ToolStatus status={t.status} />
+                  <span className="text-ink">{tool?.label ?? t.name}</span>
+                  <span className="truncate text-ink-3">{describeToolArgs(t.args)}</span>
+                  <span className="source-tag ml-auto shrink-0">{tool?.source ?? 'tool'}</span>
+                </motion.li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
     </motion.div>
+  );
+}
+
+function ToolStatus({ status }: { status: Progress['tools'][number]['status'] }) {
+  if (status === 'running') {
+    return (
+      <span
+        aria-label="Running"
+        className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line-strong border-t-moss motion-reduce:animate-none"
+      />
+    );
+  }
+  return (
+    <span
+      aria-label={status === 'ok' ? 'Done' : 'Failed'}
+      className={cn(
+        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full',
+        status === 'ok' ? 'bg-moss/20 text-moss' : 'bg-fire/20 text-fire',
+      )}
+    >
+      {status === 'ok' ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : <span className="text-[10px] leading-none">!</span>}
+    </span>
   );
 }
 

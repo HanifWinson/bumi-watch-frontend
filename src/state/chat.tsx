@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { askAgent, ApiError, type AgentReply, type ChatTurn } from '../lib/api';
+import { askAgentStream, ApiError, type AgentEvent, type AgentReply, type ChatTurn } from '../lib/api';
 
 export interface ChatMessage {
   id: string;
@@ -9,8 +9,31 @@ export interface ChatMessage {
   error?: boolean;
 }
 
+/** What the agent is doing right now, from the live event stream */
+export interface Progress {
+  phase: 'choosing' | 'querying' | 'writing';
+  tools: { id: string; name: string; args: Record<string, unknown>; status: 'running' | 'ok' | 'failed' }[];
+}
+
+const START: Progress = { phase: 'choosing', tools: [] };
+
+function advance(p: Progress, e: AgentEvent): Progress {
+  switch (e.type) {
+    case 'thinking':
+      return { ...p, phase: e.after_tools ? 'writing' : 'choosing' };
+    case 'tool_start':
+      return { phase: 'querying', tools: [...p.tools, { id: e.id, name: e.name, args: e.args, status: 'running' }] };
+    case 'tool_end':
+      return { ...p, tools: p.tools.map((t) => (t.id === e.id ? { ...t, status: e.ok ? 'ok' : 'failed' } : t)) };
+    default:
+      return p;
+  }
+}
+
 interface ChatState {
   messages: ChatMessage[];
+  /** Live steps of the in-flight question */
+  progress: Progress | null;
   pending: boolean;
   /** When the in-flight question was sent (for the elapsed timer) */
   pendingSince: number | null;
@@ -33,6 +56,7 @@ function toHistory(messages: ChatMessage[]): ChatTurn[] {
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingSince, setPendingSince] = useState<number | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -41,9 +65,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     controllerRef.current = controller;
     setPendingSince(Date.now());
+    setProgress(START);
 
     try {
-      const reply = await askAgent(question, toHistory(prior), controller.signal);
+      const reply = await askAgentStream(
+        question,
+        toHistory(prior),
+        (event) => {
+          if (controllerRef.current === controller) setProgress((p) => advance(p ?? START, event));
+        },
+        controller.signal,
+      );
       setMessages((m) => [...m, { id: nextId(), role: 'assistant', content: reply.answer, meta: reply.metadata }]);
     } catch (err) {
       if (controller.signal.aborted && !(err instanceof ApiError)) return;
@@ -58,6 +90,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       if (controllerRef.current === controller) {
         controllerRef.current = null;
         setPendingSince(null);
+        setProgress(null);
       }
     }
   }, []);
@@ -88,6 +121,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     controllerRef.current?.abort();
     controllerRef.current = null;
     setPendingSince(null);
+    setProgress(null);
   }, []);
 
   const clear = useCallback(() => {
@@ -96,8 +130,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [stop]);
 
   const value = useMemo(
-    () => ({ messages, pending: pendingSince !== null, pendingSince, send, retry, stop, clear }),
-    [messages, pendingSince, send, retry, stop, clear],
+    () => ({ messages, progress, pending: pendingSince !== null, pendingSince, send, retry, stop, clear }),
+    [messages, progress, pendingSince, send, retry, stop, clear],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
