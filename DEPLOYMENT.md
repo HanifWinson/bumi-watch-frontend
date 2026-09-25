@@ -1,12 +1,12 @@
 # Deploying Bumi Watch
 
-Step-by-step guide for putting Bumi Watch online: the **backend** on Railway and the **frontend** on Firebase Hosting.
-Takes about 30 minutes the first time.
+Step-by-step guide for putting Bumi Watch online: the **backend** on Railway, and the **frontend** on any
+static host you like (Vercel suggested). Takes about 30 minutes the first time.
 
 | Part | Repo | Goes to |
 |---|---|---|
 | Backend (API, Nemotron agent, data pipeline, SQLite) | [HanifWinson/bumi-watch-nemotron](https://github.com/HanifWinson/bumi-watch-nemotron) | Railway |
-| Frontend (this repo, Vite + React) | this repo | Firebase Hosting |
+| Frontend (this repo, Vite + React) | this repo | Your choice: Vercel suggested |
 
 **Order matters:** deploy the backend first, because the frontend needs the backend's URL when it's built.
 Then go back and tell the backend the frontend's URL (step 3).
@@ -18,7 +18,7 @@ Then go back and tell the backend the frontend's URL (step 3).
   - `NEBIUS_API_KEY`: the Nemotron chat agent
   - `NASA_FIRMS_API_KEY`: fire hotspots
   - `WAQI_API_KEY`: air quality
-- **Node.js 22+** and the Firebase CLI: `npm install -g firebase-tools`
+- **Node.js 22+** if you want to build or test locally
 
 ---
 
@@ -66,36 +66,39 @@ Every push to `main` on the backend repo redeploys automatically. The volume kee
 
 ---
 
-## 2. Frontend on Firebase Hosting
+## 2. Frontend: any static host (Vercel suggested)
 
-This repo is already configured for Firebase Hosting: `.firebaserc` points at the Firebase project **`bumi-watch`**,
-and `firebase.json` serves the built `dist/` folder.
+The frontend builds to plain static files (`npm run build` → `dist/`), so it runs on any static host:
+Vercel, Netlify, Cloudflare Pages, Firebase Hosting, GitHub Pages… Use whichever you like.
+There are no client-side routes, so no rewrite/redirect rules are needed.
 
-1. **Get access to the Firebase project.** Hanif needs to add you in the
-   [Firebase console](https://console.firebase.google.com) → project `bumi-watch` → ⚙️ **Users and permissions** → *Add member*.
-   (Or create your own Firebase project and run `firebase use --add` to point this repo at it instead.)
-2. Log in and install dependencies:
+Whatever you pick, there's **one setting that matters:**
 
-   ```bash
-   firebase login
-   npm ci
-   ```
+> **`VITE_API_URL` = the backend URL from step 1** (e.g. `https://YOUR-BACKEND.up.railway.app`, no trailing slash).
+> Vite bakes it in **at build time**, so set it *before* building. If you change it later, rebuild and redeploy.
 
-3. Tell the build where the backend is. Create **`.env.production`** in the repo root (it's git-ignored):
+### Suggested: Vercel
 
-   ```bash
-   VITE_API_URL="https://YOUR-BACKEND.up.railway.app"
-   ```
+1. Sign in at **vercel.com** with GitHub → **Add New… → Project** → import **`bumi-watch-frontend`**.
+2. Vercel detects **Vite** automatically (build command `npm run build`, output directory `dist`). Leave those as they are.
+3. Open **Environment Variables** on that same screen and add `VITE_API_URL` = your backend URL.
+4. **Deploy.** You get a URL like `https://bumi-watch-frontend.vercel.app`. This is the **frontend URL**.
 
-   Vite bakes this in **at build time**. If the backend URL ever changes, rebuild and redeploy the frontend.
-4. Build and deploy:
+Every push to `main` redeploys automatically. If you change `VITE_API_URL` later, trigger a **Redeploy** in
+Vercel so the new value is built in.
 
-   ```bash
-   npm run build
-   firebase deploy --only hosting
-   ```
+Note: Vercel's preview deployments (for branches and PRs) get their own URLs, which the backend's CORS setting
+won't allow unless you add them in step 3. The production URL is what matters.
 
-5. Firebase prints the **frontend URL**, normally `https://bumi-watch.web.app` (plus `https://bumi-watch.firebaseapp.com`).
+### Any other host
+
+- **Build command:** `npm run build` · **Output directory:** `dist` · **Node:** 22
+- **Environment variable at build time:** `VITE_API_URL`
+- Building locally and uploading `dist/` also works: put `VITE_API_URL="https://..."` in a `.env.production`
+  file (git-ignored) before `npm run build`.
+- **Firebase Hosting:** `firebase.json` is already in the repo. Create your own Firebase project, run
+  `firebase use --add` to point the repo at it (the `bumi-watch` project in `.firebaserc` may not exist),
+  then `npm run build && firebase deploy --only hosting`.
 
 ---
 
@@ -107,10 +110,11 @@ Lock it to the frontend:
 1. Railway → backend service → **Variables** → add
 
    ```
-   CORS_ORIGINS=https://bumi-watch.web.app,https://bumi-watch.firebaseapp.com
+   CORS_ORIGINS=https://bumi-watch-frontend.vercel.app
    ```
 
-   Use the exact URLs Firebase printed, comma-separated, no trailing slashes. Add `http://localhost:3000`
+   Use the exact frontend URL(s) your host gave you, comma-separated if there are several
+   (e.g. a custom domain as well), no trailing slashes. Add `http://localhost:3000`
    too if you want to run the frontend locally against the deployed backend.
 2. Railway redeploys automatically when variables change.
 
@@ -131,7 +135,7 @@ Open the frontend URL and go through:
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| "Can't reach the Bumi Watch backend" | Wrong `VITE_API_URL`, or CORS | Check the browser console (F12). A CORS error means `CORS_ORIGINS` doesn't exactly match the frontend URL. Otherwise fix `.env.production`, then rebuild and redeploy. |
+| "Can't reach the Bumi Watch backend" | Wrong `VITE_API_URL`, or CORS | Check the browser console (F12). A CORS error means `CORS_ORIGINS` doesn't exactly match the frontend URL. Otherwise fix `VITE_API_URL` on your host, then rebuild/redeploy (it's baked in at build time). |
 | Dashboard loads but tiles are empty | First data run hasn't finished, or keys missing | Check Railway logs for `Run complete` and for `... not set — skipping` warnings. |
 | Every question fails | `NEBIUS_API_KEY` missing or wrong, or wrong model ID | Railway logs show `Agent error: ...`. Don't set `NEMOTRON_MODEL` unless you mean to. The default `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` is correct, and Nebius rejects the lowercase form. |
 | "Too many questions. Try again in Ns." | Rate limit: 10 questions/min per visitor | Working as intended. Raise `AGENT_RATE_LIMIT` if needed. If *everyone* hits it at once, `TRUST_PROXY=1` is missing. |
@@ -141,7 +145,7 @@ Open the frontend URL and go through:
 ## Updating later
 
 - **Backend:** push to `main` on `bumi-watch-nemotron`. Railway redeploys by itself.
-- **Frontend:** `npm run build && firebase deploy --only hosting`.
+- **Frontend:** on Vercel (or Netlify, Cloudflare Pages), push to `main` and it redeploys itself. Elsewhere, rebuild and upload `dist/`.
 
 More backend detail (all environment variables, API changes, known gaps) is in the backend repo's
 [`HANDOFF.md`](https://github.com/HanifWinson/bumi-watch-nemotron/blob/main/HANDOFF.md).
