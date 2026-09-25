@@ -133,11 +133,8 @@ function AssistantMessage({ message, onRetry }: { message: ChatMessage; onRetry?
         {meta && (
           <div className="mt-4">
             <div className="flex flex-wrap items-center gap-1.5">
-              {meta.sources.map((s) => (
-                <span key={s} className="source-tag rounded-md border border-line px-2 py-1 text-ink-2">
-                  {s}
-                </span>
-              ))}
+              {/* No source chips: the answer's own "📍 Sources" line names what it used,
+                  and chips listing everything the tools fetched contradicted it */}
               <button
                 onClick={() => setShowTrace((v) => !v)}
                 aria-expanded={showTrace}

@@ -13,7 +13,7 @@ const NAV: { id: View; label: string }[] = [
   { id: 'sources', label: 'Sources' },
 ];
 
-const GITHUB_URL = 'https://github.com/HanifWinson/bumi-watch-project';
+const GITHUB_URL = 'https://github.com/HanifWinson/bumi-watch-nemotron';
 
 interface HeaderProps {
   view: View;
