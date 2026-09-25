@@ -7,6 +7,8 @@ import { useRemote } from '../state/useRemote';
 import StatTiles from '../components/StatTiles';
 import DataMap, { type Layers } from '../components/DataMap';
 import ProvincePanel from '../components/ProvincePanel';
+import Timelapse from '../components/Timelapse';
+import { newFireClock } from '../components/fireCanvas';
 import { cn } from '../lib/utils';
 
 interface OverviewProps {
@@ -19,6 +21,8 @@ export default function Overview({ days, onDaysChange, onAsk }: OverviewProps) {
   const load = useCallback((signal: AbortSignal) => getDashboard(days, signal), [days]);
   const { data, error, loading, refreshing, reload } = useRemote(`dashboard:${days}`, load);
   const [layers, setLayers] = useState<Layers>({ fires: true, quakes: true, air: true });
+  const [fireClock] = useState(newFireClock);
+  const canPlay = days > 1 && layers.fires && !!data?.fires.points.length;
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,9 +54,14 @@ export default function Overview({ days, onDaysChange, onAsk }: OverviewProps) {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="card relative h-[520px] overflow-hidden sm:h-[620px]">
-          <DataMap data={data} layers={layers} selected={selected} onSelect={setSelected} />
+          <DataMap data={data} layers={layers} selected={selected} onSelect={setSelected} fireClock={fireClock} />
           <LayerToggles layers={layers} onChange={setLayers} data={data} />
-          {!selected && (
+          {canPlay && (
+            <div className="absolute bottom-3 left-3 z-[400]">
+              <Timelapse points={data!.fires.points} clock={fireClock} />
+            </div>
+          )}
+          {!selected && !canPlay && (
             <div className="source-tag pointer-events-none absolute bottom-3 left-3 z-[400] hidden rounded-md bg-bg/80 px-2.5 py-1.5 backdrop-blur sm:block">
               Click a province for details · shading = fire hotspots
             </div>

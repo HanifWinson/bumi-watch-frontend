@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
-import { canvas, circleMarker, divIcon, layerGroup } from 'leaflet';
+import { divIcon } from 'leaflet';
 import type { GeoJSON as LeafletGeoJSON, Layer, LeafletMouseEvent, PathOptions } from 'leaflet';
 import type { Feature, FeatureCollection } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import type { AirStation, Dashboard, FirePoint } from '../lib/api';
 import { aqiBand, formatNumber, timeAgo } from '../lib/format';
 import { loadProvinces } from '../lib/provinces';
+import { useReducedMotion } from 'motion/react';
+import { FireCanvasLayer, type FireClock } from './fireCanvas';
 
 export type Layers = { fires: boolean; quakes: boolean; air: boolean };
 
@@ -15,6 +17,8 @@ interface DataMapProps {
   layers: Layers;
   selected: string | null;
   onSelect: (province: string | null) => void;
+  /** Timelapse state shared with the playback control */
+  fireClock: FireClock;
 }
 
 const FIRE = '#f0714e';
@@ -37,7 +41,7 @@ const aqiIcon = (aqi: number, color: string) =>
 
 const provinceName = (feature?: Feature) => (feature?.properties?.name as string | undefined) ?? '';
 
-export default function DataMap({ data, layers, selected, onSelect }: DataMapProps) {
+export default function DataMap({ data, layers, selected, onSelect, fireClock }: DataMapProps) {
   const [provinces, setProvinces] = useState<FeatureCollection | null>(null);
   const geoRef = useRef<LeafletGeoJSON | null>(null);
 
@@ -121,7 +125,7 @@ export default function DataMap({ data, layers, selected, onSelect }: DataMapPro
         />
       )}
 
-      {layers.fires && data && <FireDots points={data.fires.points} />}
+      {layers.fires && data && <FireDots points={data.fires.points} clock={fireClock} />}
 
       {layers.quakes &&
         data?.earthquakes.events.map((q, i) => (
@@ -149,28 +153,19 @@ export default function DataMap({ data, layers, selected, onSelect }: DataMapPro
   );
 }
 
-// Thousands of fires: drawn straight onto one canvas instead of one React
-// component each, so toggling layers or selecting a province stays instant.
-function FireDots({ points }: { points: FirePoint[] }) {
+// Thousands of fires on one hand-drawn canvas (see fireCanvas.ts), which the
+// timelapse can redraw every frame.
+function FireDots({ points, clock }: { points: FirePoint[]; clock: FireClock }) {
   const map = useMap();
+  const reduce = !!useReducedMotion();
   useEffect(() => {
-    const renderer = canvas({ padding: 0.5 });
-    const group = layerGroup(
-      points.map((p) =>
-        circleMarker([p.lat, p.lon], {
-          renderer,
-          radius: Math.min(4, 1.5 + Math.sqrt(p.frp ?? 1) / 4),
-          stroke: false,
-          fillColor: FIRE,
-          fillOpacity: 0.65,
-          interactive: false,
-        }),
-      ),
-    ).addTo(map);
+    const layer = new FireCanvasLayer(points, clock, !reduce).addTo(map);
+    clock.redraw = () => layer.draw();
     return () => {
-      group.remove();
+      clock.redraw = () => {};
+      layer.remove();
     };
-  }, [map, points]);
+  }, [map, points, clock, reduce]);
   return null;
 }
 

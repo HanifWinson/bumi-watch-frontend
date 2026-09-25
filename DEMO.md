@@ -39,16 +39,17 @@ not clicking and talking at the same time. Timings are for the *edited* video.
 | Time | On screen | Voiceover (adapt the numbers to what you see) |
 |---|---|---|
 | 0:00–0:15 | Landing page, then click **Open dashboard** | "Indonesia faces fires, haze, earthquakes and drought. The data exists, but it's scattered across satellites, sensors and agencies. This is Bumi Watch." |
-| 0:15–0:45 | **Overview.** Hover over the four tiles; toggle **Fires / Quakes / Air quality** on the map; switch **24h → 7d → 24h** | "One live map: fire hotspots from NASA satellites, air quality from about 130 stations, earthquakes from BMKG, and rainfall for every province, refreshed every 30 minutes. Right now there are over [N] fire hotspots in the last 24 hours." |
-| 0:45–1:05 | Point at **Most fire hotspots** and **Worst air**; click the leading province on the map | "And the data tells a story. [Kalimantan Tengah] has the most fires, and also the worst air: [Palangka Raya] is at AQI [474]. Hazardous." |
-| 1:05–1:20 | Province panel open; click **Ask Bumi about [province]** | "But a map can't tell you *why*. So we ask." |
+| 0:15–0:35 | **Overview.** Hover over the four tiles; toggle **Fires / Quakes / Air quality** on the map | "One live map: fire hotspots from NASA satellites, air quality from about 130 stations, earthquakes from BMKG, and rainfall for every province, refreshed every 30 minutes. Right now there are over [N] fire hotspots in the last 24 hours." |
+| 0:35–0:55 | Switch to **7d**, click **Play 7 days of fires** on the map (bottom left). Let it run its 10 seconds: fires appear in the order satellites saw them, bright when new, fading to embers | "Here's the last week, fire by fire, as NASA's satellites detected it. Watch [Kalimantan]." |
+| 0:55–1:10 | Back to **24h**. Point at **Most fire hotspots** and **Worst air**; click the leading province on the map | "And the data tells a story. [Kalimantan Tengah] has the most fires, and also the worst air: [Palangka Raya] is at AQI [474]. Hazardous." |
+| 1:10–1:20 | Province panel open; click **Ask Bumi about [province]** | "But a map can't tell you *why*. So we ask." |
 | 1:20–1:45 | Chat: the live steps. *Nemotron is choosing which data to pull* → each tool call appears with a spinner, then ✓ (e.g. *Air quality · All Indonesia · 24h*) → *Reading the results and writing the answer*. Keep the moments where a tool row appears; cut the long "choosing" waits. Then the answer appears | "The question goes to NVIDIA Nemotron, running on Nebius Token Factory. It isn't answering from memory. It decides which of six database tools to call, queries the live data, and links the sources together." |
 | 1:45–2:10 | Zoom in on the answer's numbers and the **📍 Sources** line; click **N tool calls · Xs** to open **How Nemotron answered** | "Every number comes from the data, and every answer names its sources. And you can see exactly what the agent did: which tools, for which province, over what period." |
-| 2:10–2:35 | Type **Bagaimana kualitas udara di Jakarta hari ini?** → answer in Indonesian | "It works in Bahasa Indonesia too, station by station." |
-| 2:35–2:50 | **Sources** page | "Four public data feeds, pulled every 30 minutes into one database. The dashboard is plain SQL; the answers are Nemotron with function calling." |
-| 2:50–3:00 | Back to the map, or the logo | "Bumi Watch. Ask the earth. It's listening." |
+| 2:10–2:30 | Type **Bagaimana kualitas udara di Jakarta hari ini?** → answer in Indonesian | "It works in Bahasa Indonesia too, station by station." |
+| 2:30–2:45 | **Sources** page | "Four public data feeds, pulled every 30 minutes into one database. The dashboard is plain SQL; the answers are Nemotron with function calling." |
+| 2:45–2:55 | Back to the map, or the logo | "Bumi Watch. Ask the earth. It's listening." |
 
-If you need to cut time, drop the Jakarta question (2:10–2:35) first, then the Sources page.
+If you need to cut time, drop the Jakarta question (2:10–2:30) first, then the Sources page. Keep the timelapse: it's the most visual moment.
 
 ## Questions that work
 
